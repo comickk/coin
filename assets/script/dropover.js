@@ -7,7 +7,7 @@
 // Learn life-cycle callbacks:
 //  - [Chinese] http://docs.cocos.com/creator/manual/zh/scripting/life-cycle-callbacks.html
 //  - [English] http://www.cocos2d-x.org/docs/creator/en/scripting/life-cycle-callbacks.html
-
+var game = require('game'); 
 cc.Class({
     extends: cc.Component,
 
@@ -53,12 +53,24 @@ cc.Class({
         //cc.log('-------onEndContact-------');
         //先隐藏下落的币
         //var coin = otherCollider.node;
-        otherCollider.node.active = false;        
-
-        //再原位置生成新币
+        var coin;
+       
+        try{
+        otherCollider.node.active = false; 
+        
         let type=0;
         if(this.palletA.y > -60) type =1;
-        var coin = cc.instantiate(this.coin[type]);       
+
+       
+        //再原位置生成新币
+        if(game.main._pushcoins.size() >0){
+            coin = game.main._pushcoins.get();
+            if(type==0) coin.group ='coinA1';
+            else coin.group ='coinA2';
+            coin.active = true;           
+        }else{
+            coin = cc.instantiate(this.coin[type]);              
+        }      
 
         //设置新币属性
         let wp = otherCollider.node.convertToWorldSpaceAR(cc.Vec2.ZERO); 
@@ -70,8 +82,15 @@ cc.Class({
 
         coin.y -= 13;         
 
-        //销毁下落币
-        otherCollider.node.destroy();       
+        //回收下落币
+        if(otherCollider.node.group =='coin')        
+            game.main._dropcoins.put(otherCollider.node);
+        else
+            otherCollider.node.destroy();   
+        }catch(e){
+            cc.log(e);               
+            cc.log(coin);
+        }
     },
 
     // onPostSolve: function (contact, selfCollider, otherCollider) {

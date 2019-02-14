@@ -28,11 +28,13 @@ cc.Class({
         //     }
         // },
 
+
         scroll:cc.Node,
 
         light:cc.Node,
 
         trigger:cc.PhysicsBoxCollider,
+       
         //_flash:cc.Action,
     },
 

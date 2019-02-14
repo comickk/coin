@@ -103,7 +103,7 @@
     "_isTrimmedMode": true,
     "_state": 0,
     "_atlas": null,
-    "_id": "51NCJ5F+5I5Jt59YMtxLfY"
+    "_id": "8fK7qpgyVONYEParNt3NGm"
   },
   {
     "__type__": "cc.RigidBody",
@@ -115,9 +115,9 @@
     "_enabled": true,
     "_type": 2,
     "_allowSleep": true,
-    "_gravityScale": 2,
+    "_gravityScale": 4,
     "_linearDamping": 0,
-    "_angularDamping": 0,
+    "_angularDamping": 0.1,
     "_linearVelocity": {
       "__type__": "cc.Vec2",
       "x": 0,
@@ -127,7 +127,7 @@
     "_fixedRotation": false,
     "enabledContactListener": false,
     "bullet": false,
-    "_id": "b6NW11NYxEP7UdbSNtZ7o0"
+    "_id": "92q9OMq5xEq5CxQ0d68tGa"
   },
   {
     "__type__": "cc.PhysicsCircleCollider",
@@ -140,8 +140,8 @@
     "tag": 0,
     "_density": 10,
     "_sensor": false,
-    "_friction": 0.2,
-    "_restitution": 0.1,
+    "_friction": 0.1,
+    "_restitution": 0.2,
     "body": null,
     "_offset": {
       "__type__": "cc.Vec2",
@@ -149,7 +149,7 @@
       "y": 0
     },
     "_radius": 22,
-    "_id": "25VDVmp2pElYUj7ldox0ky"
+    "_id": "54RI5fLJtGtIt7UV1o6YCu"
   },
   {
     "__type__": "cc.PrefabInfo",

@@ -1,32 +1,9 @@
-// Learn cc.Class:
-//  - [Chinese] http://docs.cocos.com/creator/manual/zh/scripting/class.html
-//  - [English] http://www.cocos2d-x.org/docs/creator/en/scripting/class.html
-// Learn Attribute:
-//  - [Chinese] http://docs.cocos.com/creator/manual/zh/scripting/reference/attributes.html
-//  - [English] http://www.cocos2d-x.org/docs/creator/en/scripting/reference/attributes.html
-// Learn life-cycle callbacks:
-//  - [Chinese] http://docs.cocos.com/creator/manual/zh/scripting/life-cycle-callbacks.html
-//  - [English] http://www.cocos2d-x.org/docs/creator/en/scripting/life-cycle-callbacks.html
+
 var game = require('game'); 
 cc.Class({
     extends: cc.Component,
 
-    properties: {
-        // foo: {
-        //     // ATTRIBUTES:
-        //     default: null,        // The default value will be used only when the component attaching
-        //                           // to a node for the first time
-        //     type: cc.SpriteFrame, // optional, default is typeof default
-        //     serializable: true,   // optional, default is true
-        // },
-        // bar: {
-        //     get () {
-        //         return this._bar;
-        //     },
-        //     set (value) {
-        //         this._bar = value;
-        //     }
-        // },
+    properties: {        
 
         spin:cc.Node,
         roller:{
@@ -39,11 +16,21 @@ cc.Class({
             type:cc.Node
         },              
 
+        spinlight:{
+            default:[],
+            type:cc.Sprite
+        },
+
+        lightframe:{
+            default:[],
+            type: cc.SpriteFrame,
+        },
+
         zhuanpan:cc.Animation,
         feibiao:cc.Animation,
 
 
-        //游戏模式： 0 正常时 投中spin 开启摇奖， 1 幸运转盘,投中spin 扔飞镖 
+        //游戏模式： 0 正常时 投中spin 开启摇奖， 1 幸运转盘,投中spin 扔飞镖   2 帽子  3  头奖  4 发奖
         _mode:0,
 
         _rolling:false,
@@ -69,6 +56,7 @@ cc.Class({
 
      onLoad () {
 
+        game.scroll = this;
         this.node.on('roll',this.addroll,this);
         this._isstop =[0,0,0];
         
@@ -82,7 +70,7 @@ cc.Class({
     getexpect(){
         var r = game.spinresult();
         this._type = r[3];
-        cc.log('----spin------'+ r);
+        //cc.log('----spin------'+ r);
         for(let i=0;i<3;i++){
             this._expect[i] = -224 + r[i]*64;
         }
@@ -94,10 +82,12 @@ cc.Class({
             this.stopzhuanpan();           
             return;
         }
+       
+        if( this._mode != 0 || this._count >=5 )return;        
+      
 
-        if( this._count >5 )return;
-        
         this._count++;
+        this.setspinlight();
         this.roll();
     },
 
@@ -107,6 +97,7 @@ cc.Class({
             this._rollaudioID = cc.audioEngine.play(game.audio.clip[1],true);
             this._rolling = true;
             this._count--;
+            this.setspinlight();
             this.getexpect();
             this.schedule(this.runroll,0.05);
         }
@@ -146,14 +137,14 @@ cc.Class({
 
     stoproll(){       
         this.unschedule(this.runroll);
-        cc.log('-------count -------' + this._count);
+        //cc.log('-------count -------' + this._count);
         this._rolling = false;
         this._rolltime=0;
         this._isstop =[0,0,0];
         cc.audioEngine.stop(this._rollaudioID);
 
         if(this._type >0)
-            this.checkresult();
+            this.scheduleOnce(this.checkresult,1);           
         else
             if(this._count>0)
                 this.scheduleOnce(this.roll,1);
@@ -161,49 +152,48 @@ cc.Class({
 
     //检查 摇奖结果,并开奖
     checkresult(){
-        if(this._type <11 ) return ;
-        
-        cc.log('中了  '+ this._type +'  奖! ');
-        switch(this._type){
-            case 11://双水果 奖励对应水果分
-            break;
-            case 21://三水果  转盘飞镖，中多少奖多少   60秒内投中spin 
-                this._mode =1;//
+        if(this._type <10 ) return ;
 
-                if(cc.audioEngine.isMusicPlaying())
-                    cc.audioEngine.stopMusic();
-                cc.audioEngine.playMusic(game.audio.bgm[3],true);
-                this.bg[1].active  = true;
-                game.ui.starttimer();
+        if(this._type < 20){
+            this.setmode(4,-1,3,false,false);  
+            game.main.award( game.score[this._type-10]);   
+            return; 
+        }
+        
+        //cc.log('中了  '+ this._type +'  奖! ');
+        switch(this._type){
+            // case 11://双水果 奖励对应水果分
+            //     this.setmode(4,-1,3,false,false);  
+            //     game.main.award( game.score[this._type-10]);              
+            // break;
+
+            case 21://三水果  转盘飞镖，中多少奖多少   60秒内投中spin 
+                this.setmode(1,1,3,true,false);                
+                //检查转盘是否开启,并复位飞镖
+                this.zhuanpan.resume();
+                //this.feibiao.setCurrentTime(0);
+                this.feibiao.node.y += 300;
+                game.ui.starttimer();               
             break;
+
             case 31://双水果 + 小丑 ,60秒 投帽子，每中一个帽子加对应水果分,中out清空
-                if(cc.audioEngine.isMusicPlaying())
-                    cc.audioEngine.stopMusic();
-                cc.audioEngine.playMusic(game.audio.bgm[2],true);
-                this.bg[2].active  = true;
+                this.setmode(2,2,2,false,false);               
                 game.ui.starttimer();
-                this.spin.emit('pause');
+                game.scoretrigger.allon();
+              
             break;
             case 41://1小丑 500+
-                if(cc.audioEngine.isMusicPlaying())
-                    cc.audioEngine.stopMusic();
-                cc.audioEngine.playMusic(game.audio.bgm[1]);
-                this.bg[0].active  = true;         
-                this.spin.emit('pause');       
+                this.setmode(4,0,1,false,false);  
+                game.main.award( 500);          
+               
             break;
             case 51://2小丑 1000+
-                if(cc.audioEngine.isMusicPlaying())
-                    cc.audioEngine.stopMusic();
-                cc.audioEngine.playMusic(game.audio.bgm[1]);
-                this.bg[0].active  = true;   
-                this.spin.emit('pause');            
+                this.setmode(4,0,1,false,false);  
+                game.main.award( 1000);    
             break;
             case 61://3小丑 2000+
-                if(cc.audioEngine.isMusicPlaying())
-                    cc.audioEngine.stopMusic();
-                cc.audioEngine.playMusic(game.audiobgm[1]);
-                this.bg[0].active  = true;
-                this.spin.emit('pause');
+                this.setmode(4,0,1,false,false);  
+                game.main.award( 2000); 
             break;
         }
     },
@@ -211,9 +201,16 @@ cc.Class({
     stopzhuanpan(){
         this.feibiao.play();
 
+        this._mode =4;//发奖模式
+        this.spin.emit('pause');            
+
         this.scheduleOnce(function(){
-            this.zhuanpan.stop();      
-             cc.log(  '--中了--' + this.angle2prize(   this.zhuanpan.node.rotation ));
+            this.zhuanpan.pause();      
+            // cc.log(  '--中了--' + this.angle2prize(   this.zhuanpan.node.rotation ));
+            var n=this.angle2prize(   this.zhuanpan.node.rotation )  ;
+            //停表
+            game.ui.stoptimer();
+            game.main.award(n);           
         },0.5);
     },
     //将转盘角度转换成 对应的奖励
@@ -227,6 +224,58 @@ cc.Class({
         if(ang > 301 || ang <= 16) return 200;
         return 0;
     },
+
+    //重置为普通模式
+    rest(){
+        //cc.log('--scroll  rest--');
+        this.setmode(0,-1,0,true,true);      
+
+        //若还有未摇的奖,则继续
+        if(this._count>0)
+            this.scheduleOnce(this.roll,1);     
+    },
+
+    setmode(modeID,bgID,bgmID,isspin,istrigger){
+
+        this._mode =modeID;//
+
+        if(cc.audioEngine.isMusicPlaying())
+            cc.audioEngine.stopMusic();
+        cc.audioEngine.playMusic(game.audio.bgm[bgmID],true);   
+
+        if(bgID>=0)
+            this.bg[ bgID ].active  = true;
+        else{
+            this.bg[0].active = false;
+            this.bg[1].active = false;
+            this.bg[2].active = false;
+        }
+
+        if(!isspin)
+            this.spin.emit('pause');
+        else
+            this.spin.emit('resume');
+
+        if(!istrigger)
+            game.scoretrigger.offtrigger();
+        else
+            game.scoretrigger.randomtrigger();
+    },
+
+    setspinlight(){        
+        
+        for(let i=0;i<4;i++){
+            if(this._count > i+1){
+               // cc.log('-- open---' +i);
+                this.spinlight[i].spriteFrame = this.lightframe[1];
+            }
+            else{
+                //cc.log('-- close---' +i);
+                this.spinlight[i].spriteFrame = this.lightframe[0];
+            }
+        }
+    },
+   
 
     // update (dt) {},
 });
