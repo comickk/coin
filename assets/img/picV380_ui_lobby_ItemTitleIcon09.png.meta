@@ -1,0 +1,31 @@
+{
+  "ver": "2.2.0",
+  "uuid": "c1e1ec73-1749-4177-b1b2-ff4fa5755017",
+  "type": "sprite",
+  "wrapMode": "clamp",
+  "filterMode": "bilinear",
+  "premultiplyAlpha": false,
+  "subMetas": {
+    "picV380_ui_lobby_ItemTitleIcon09": {
+      "ver": "1.0.3",
+      "uuid": "1d449d57-e37e-4584-919f-746e0abab071",
+      "rawTextureUuid": "c1e1ec73-1749-4177-b1b2-ff4fa5755017",
+      "trimType": "auto",
+      "trimThreshold": 1,
+      "rotated": false,
+      "offsetX": 0,
+      "offsetY": 0,
+      "trimX": 17,
+      "trimY": 0,
+      "width": 47,
+      "height": 24,
+      "rawWidth": 81,
+      "rawHeight": 24,
+      "borderTop": 0,
+      "borderBottom": 0,
+      "borderLeft": 0,
+      "borderRight": 0,
+      "subMetas": {}
+    }
+  }
+}

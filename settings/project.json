@@ -124,13 +124,13 @@
     "coin",
     "UI"
   ],
-  "last-module-event-record-time": 1550041718077,
+  "last-module-event-record-time": 1550828955913,
   "simulator-orientation": false,
   "simulator-resolution": {
     "height": 640,
     "width": 960
   },
-  "start-scene": "current",
+  "start-scene": "4a5de441-872c-4e60-9f75-c6c5ffc2783b",
   "use-customize-simulator": false,
   "use-project-simulator-setting": false
 }

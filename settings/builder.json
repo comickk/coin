@@ -9,8 +9,7 @@
   },
   "encryptJs": true,
   "excludeScenes": [
-    "b6ec7dfa-e7a3-4bee-a843-d6a8fb38ce64",
-    "4a5de441-872c-4e60-9f75-c6c5ffc2783b"
+    "b6ec7dfa-e7a3-4bee-a843-d6a8fb38ce64"
   ],
   "fb-instant-games": {},
   "includeSDKBox": false,
@@ -30,7 +29,7 @@
     "REMOTE_SERVER_ROOT": "",
     "orientation": "portrait"
   },
-  "startScene": "88c4b063-1a87-498a-8951-6ba061360e08",
+  "startScene": "4a5de441-872c-4e60-9f75-c6c5ffc2783b",
   "title": "coin",
   "webOrientation": "portrait",
   "wechatgame": {

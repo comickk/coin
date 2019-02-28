@@ -1,350 +1,337 @@
-
-var game = require('game'); 
+var game = require('game');
+var config =require('config');
 cc.Class({
-    extends: cc.Component,
+	extends: cc.Component,
 
-    properties: {
-        // foo: {
-        //     // ATTRIBUTES:
-        //     default: null,        // The default value will be used only when the component attaching
-        //                           // to a node for the first time
-        //     type: cc.SpriteFrame, // optional, default is typeof default
-        //     serializable: true,   // optional, default is true
-        // },
-        // bar: {
-        //     get () {
-        //         return this._bar;
-        //     },
-        //     set (value) {
-        //         this._bar = value;
-        //     }
-        // },
+	properties: {
+		pusher: cc.Node,
+		arm: cc.Animation,
 
-        pusher:cc.Node,
-        arm:cc.Animation,
+		coin: cc.Prefab,
 
-        coin:cc.Prefab,
+		lay: {
+			default: [],
+			type: cc.Node,
+		},
+		
+		_lastP: cc.p,
 
-        lay:{
-            default:[],
-            type:cc.Node
-        },
-        _lastP:cc.p,
+		_armstop: false,
 
-        _armstop:false,
+		// _drop:cc.Action,
+		// _dropcoin:null,
 
-        // _drop:cc.Action,
-        // _dropcoin:null,
+		//投币缓冲
+		_pushcoin: 0,
+		_prizecoin: 0,
 
-        //投币缓冲
-        _pushcoin:0,
-        _prizecoin:0,
+		_dropcoins: null,
+		_pushcoins: null,
+	},
 
-        _dropcoins:null,
-        _pushcoins:null,
-        
-    },
+	// LIFE-CYCLE CALLBACKS:
 
-    // LIFE-CYCLE CALLBACKS:
+	onLoad() {
+		var manager = cc.director.getPhysicsManager();
+		manager.enabled = true;
 
-     onLoad () {
-        var manager = cc.director.getPhysicsManager();
+		//var draw = cc.PhysicsManager.DrawBits;
+		//manager.debugDrawFlags = draw.e_shapeBit|draw.e_jointBit;
 
-        manager.enabled = true;
+		//    this._drop = cc.sequence(
+		//        cc.moveBy(0.1,0,50),
+		//        cc.callFunc(function(){
+		//             if(Math.random()>0.5)
+		//                 coin.group ='coinB1';
+		//             else
+		//                 coin.group = 'coinB2';
+		//            cc.log('-------drop over-------');
+		//        })
+		//    );
 
+		game.main = this;
+		//注册发奖事件
+		//this.node.on('award',this.award,this);
 
-       //var draw = cc.PhysicsManager.DrawBits;
-       //manager.debugDrawFlags = draw.e_shapeBit|draw.e_jointBit;
+		// cc.Canvas.instance.node.width =window.innerWidth;
+		// cc.Canvas.instance.node.height =window.innerHeight;
 
-        //    this._drop = cc.sequence(
-        //        cc.moveBy(0.1,0,50),
-        //        cc.callFunc(function(){
-        //             if(Math.random()>0.5)               
-        //                 coin.group ='coinB1';
-        //             else 
-        //                 coin.group = 'coinB2';      
-        //            cc.log('-------drop over-------');
-        //        })
-        //    );
+		// cc.log(cc.Canvas.instance.node);
+		//|| document.documentElement.clientHeight
+		// document.body.clientHeight;
 
-        game.main = this;
-        //注册发奖事件
-        //this.node.on('award',this.award,this);   
+		// cc.log("----window ----" + window.innerWidth + '   '+ window.innerHeight);
+		// cc.log("----documentElement ----" + document.documentElement.clientWidth + '   '+ document.documentElement.clientHeight);
+		// cc.log("----body ----" + document.body.clientWidth + '   '+ document.body.clientHeight);
+		// cc.log("----screen -----"+ screen.availWidth + '    '+ screen.availHeight);
 
-        // cc.Canvas.instance.node.width =window.innerWidth;
-        // cc.Canvas.instance.node.height =window.innerHeight;
+		// cc.Canvas.instance.node.width = screen.availWidth;
+		// cc.Canvas.instance.node.height = screen.availHeight;
 
-        // cc.log(cc.Canvas.instance.node);
-        //|| document.documentElement.clientHeight
-        // document.body.clientHeight;
+		this.checkbridge();
 
-        // cc.log("----window ----" + window.innerWidth + '   '+ window.innerHeight);
-        // cc.log("----documentElement ----" + document.documentElement.clientWidth + '   '+ document.documentElement.clientHeight);
-        // cc.log("----body ----" + document.body.clientWidth + '   '+ document.body.clientHeight);
-        // cc.log("----screen -----"+ screen.availWidth + '    '+ screen.availHeight);
+		this._dropcoins = new cc.NodePool();
+		this._pushcoins = new cc.NodePool();
+	},
 
+	start() {
+		this._lastP = this.pusher.position;
 
-        // cc.Canvas.instance.node.width = screen.availWidth;
-        // cc.Canvas.instance.node.height = screen.availHeight;
+		var act = cc.repeatForever(cc.sequence(cc.moveBy(1.2, 0, -50), cc.moveBy(1.2, 0, 50)));
 
-        this.checkwxjsbridge();
+		this.pusher.runAction(act);
+		// // 开启物理步长的设置
+		// manager.enabledAccumulator = true;
 
-        this._dropcoins = new cc.NodePool();
-        this._pushcoins = new cc.NodePool();
-    },
+		// // 物理步长，默认 FIXED_TIME_STEP 是 1/60
+		// manager.FIXED_TIME_STEP = 1/30;
 
-    start () {
+		// // 每次更新物理系统处理速度的迭代次数，默认为 10
+		// manager.VELOCITY_ITERATIONS = 8;
 
-        this._lastP = this.pusher.position;
-        
-        var act = cc.repeatForever (cc.sequence(
-            cc.moveBy(1.2,0,-50),
-            cc.moveBy(1.2,0,50)
-        ));
+		// // 每次更新物理系统处理位置的迭代次数，默认为 10
+		// manager.POSITION_ITERATIONS = 8;
 
-        this.pusher.runAction(act);
-        // // 开启物理步长的设置
-        // manager.enabledAccumulator = true;
+		// for(let i=0;i<this.pusher.childrenCount;i++){
+		//     this.pusher.children[i].zIndex =i;
+		//   cc.log(this.pusher.children[i].zIndex);
+		// }
 
-        // // 物理步长，默认 FIXED_TIME_STEP 是 1/60
-        // manager.FIXED_TIME_STEP = 1/30;
+		//投币缓冲器,每秒中最快出5个币
+		this.schedule(this.pushcoin, 0.2);
 
-        // // 每次更新物理系统处理速度的迭代次数，默认为 10
-        // manager.VELOCITY_ITERATIONS = 8;
+		// window.onbeforeunload = onbeforeunload_handler;
+		// //window.onunload = onunload_handler;
 
-        // // 每次更新物理系统处理位置的迭代次数，默认为 10
-        // manager.POSITION_ITERATIONS = 8;      
-        
-        // for(let i=0;i<this.pusher.childrenCount;i++){
-        //     this.pusher.children[i].zIndex =i;
-        //   cc.log(this.pusher.children[i].zIndex);
-        // }
+		// function onbeforeunload_handler(){
+		//     var warning="确认关闭";
+		//     game.savecoin();
+		//     return warning;
+		// }
 
-        //投币缓冲器,每秒中最快出3个币
-        this.schedule(this.pushcoin,0.2);        
+		//定时存储
+		this.schedule(this.savedata,10);
+	},
 
-        // window.onbeforeunload = onbeforeunload_handler;   
-        // //window.onunload = onunload_handler;   
+	update(dt) {
+		this.setPalletAcoin();
+	},
 
-        // function onbeforeunload_handler(){   
-        //     var warning="确认关闭";     
-        //     game.savecoin();            
-        //     return warning;   
-        // }  
-    },
+	//  onDestroy(){
+	//     game.savecoin();
+	//  },
 
-     update (dt) {
+	//设置托盘A上的金币随托盘A 一起运动
+	setPalletAcoin() {
+		var x = this.pusher.x - this._lastP.x;
+		var y = this.pusher.y - this._lastP.y;
 
-        this.setPalletAcoin();
-     },
+		for (let i = 0; i < this.pusher.childrenCount; i++) {
+			this.pusher.children[i].x += x;
+			this.pusher.children[i].y += y;
 
-    //  onDestroy(){        
-    //     game.savecoin();
-    //  },
+			//if(this.pusher.children[i].name=='pusherB') continue;
+			if (this.pusher.children[i].y <= -150) {
+				var coin = this.pusher.children[i];
+				coin.active = false;
+				//    // cc.log('--------------'+this.pusher.children[i]);
+				if (Math.random() > 0.5) coin.group = 'coinB1';
+				else coin.group = 'coinB2';
 
-     //设置托盘A上的金币随托盘A 一起运动
-     setPalletAcoin(){
-        var x = this.pusher.x-this._lastP.x;
-        var y = this.pusher.y- this._lastP.y;       
-        
-        for(let i=0;i<this.pusher.childrenCount;i++){
-                  
-            this.pusher.children[i].x += x;
-            this.pusher.children[i].y += y;           
+				//coin.getComponent(cc.Animation).play();
+				coin.getComponent(cc.PhysicsCircleCollider).enabled = false;
+				//coin.getComponent(cc.RigidBody).enabled = false;
 
-            //if(this.pusher.children[i].name=='pusherB') continue;
-            if(this.pusher.children[i].y <= -150){               
-                var coin = this.pusher.children[i];
-                coin.active=false;
-            //    // cc.log('--------------'+this.pusher.children[i]); 
-                if(Math.random()>0.5)               
-                    coin.group ='coinB1';
-                else 
-                    coin.group = 'coinB2';
+				var act = cc.sequence(
+					cc.moveBy(0.18, 0, -55),
+					cc.callFunc(function() {
+						//cc.log('------drop-------');
+						this.getComponent(cc.PhysicsCircleCollider).enabled = true;
+						//this.getComponent(cc.RigidBody).enabled = true;
+					}, coin)
+				);
 
-                //coin.getComponent(cc.Animation).play();
-                coin.getComponent(cc.PhysicsCircleCollider).enabled = false;
-                //coin.getComponent(cc.RigidBody).enabled = false;
-                
-                var act = cc.sequence(
-                    cc.moveBy(0.18,0,-55),
-                    cc.callFunc(function(){
-                        //cc.log('------drop-------');
-                        this.getComponent(cc.PhysicsCircleCollider).enabled = true;
-                        //this.getComponent(cc.RigidBody).enabled = true;
-                    },coin)
-               );
+				//coin.y -= 20;
+				coin.active = true;
 
-                //coin.y -= 20;
-                coin.active=true;
+				coin.runAction(act);
+				//coin.runAction(this._drop);
+				coin.parent = this.lay[2];
+			}
+		}
+		this._lastP = this.pusher.position;
+	},
 
-                coin.runAction(act);
-                //coin.runAction(this._drop); 
-                coin.parent = this.lay[2];
-            }
-            
-        }
-        this._lastP = this.pusher.position;        
-     },
+	btnpushcoin() {
+		if (this._prizecoin > 0) return;
+		if (!game.pushcoin()) return;
 
-     btnpushcoin(){     
-        if(this._prizecoin>0) return;
-        if(!game.pushcoin()) return;       
+		this._pushcoin++;
+		// cc.log(coin.position);
+	},
 
-        this._pushcoin++;
-       // cc.log(coin.position);
-     },
+	//摇臂
+	btnarm() {
+		if (this._armstop) this.arm.resume();
+		else this.arm.pause();
 
-     //摇臂
-     btnarm(){
-        if(this._armstop)
-            this.arm.resume();
-        else
-            this.arm.pause();
+		this._armstop = !this._armstop;
+	},
 
-        this._armstop = !this._armstop;
-     },     
+	//充值
+	btnpay() {
+		//向服务端发送 兑换信息
+		this.exchange(1);
+	},
 
-    //充值
-     btnpay(){
-        //向服务端发送 兑换信息
-        this.exchange(1);
-     },
+	pushcoin() {
+		if (this._pushcoin <= 0 && this._prizecoin <= 0) return;
+		if (this._prizecoin > 0) {
+			this._prizecoin--;
+			game.ui.prize.string = this._prizecoin;
+			if (this._prizecoin == 0) this.endaward();
+		} else this._pushcoin--;
 
-    //  test(){
-    //      cc.log(this.pusher.children);
-    //  },
+		var coin;
 
-    pushcoin(){       
-        if(this._pushcoin <= 0 && this._prizecoin <= 0) return;
-        if(this._prizecoin >0){
-            this._prizecoin--;
-            game.ui.prize.string = this._prizecoin;
-            if(this._prizecoin == 0)       
-                this.endaward();        
-        
-        }else
-            this._pushcoin--;
+		if (this._dropcoins.size() > 0) {
+			coin = this._dropcoins.get();
+		} else {
+			coin = cc.instantiate(this.coin);
+		}
+		coin.active = true;
+		coin.parent = this.lay[0];
+		coin.y = 790 + (Math.random() - 0.5) * 25;
+		coin.x = 270 + (Math.random() - 0.5) * 25;
+	},
 
-        var coin;
-        
-        if(this._dropcoins.size() >0){            
-            coin = this._dropcoins.get();            
-        }else{
-            coin = cc.instantiate(this.coin);            
-        }   
-        coin.active = true;
-        coin.parent = this.lay[0];
-        coin.y=790+ (Math.random()-0.5)*25;
-        coin.x =270+ (Math.random()-0.5)*25;
-    },
+	dropover() {
+		let collider = this.getComponent(cc.PhysicsCircleCollider);
 
-     dropover(){
-        let collider = this.getComponent(cc.PhysicsCircleCollider);
+		if (cc.isValid(collider)) collider.enabled = true;
+	},
 
-        if(cc.isValid(collider))
-            collider.enabled = true;
-     },
+	//发奖金,停止 spin  和 trigger light
+	award(prize) {
+		//cc.log('------ 获奖金币----' + prize);
+		if (prize > 0) {
+			this._prizecoin = prize;
+			game.ui.prize.string = this._prizecoin;
+			game.ui.prize.node.active = true;
+		} else this.endaward();
+	},
 
-     //发奖金,停止 spin  和 trigger light
-     award(prize){
-        //cc.log('------ 获奖金币----' + prize);
-        if(prize >0)      {
-            this._prizecoin = prize;
-            game.ui.prize.string = this._prizecoin;
-            game.ui.prize.node.active = true;
-        }
-        else
-            this.endaward();
-     },
+	//发奖结束,恢复正常模式
+	endaward() {
+		// cc.log('-----end award------');
+		game.ui.prize.node.active = false;
+		game.scroll.rest();
+		game.ui.stoptimer();
+		game.scoretrigger.randomtrigger();
+	},
 
-     //发奖结束,恢复正常模式
-     endaward(){
-       // cc.log('-----end award------');
-       game.ui.prize.node.active = false;
-        game.scroll.rest();
-        game.ui.stoptimer();
-        game.scoretrigger.randomtrigger();
-     },
+	//兑换
+	exchange(num) {
+		
+	},
 
-     test(){
-         cc.log('---- cost: '+ game.cost +'  ------ bonus: '+ game.bonus+'  ----- '+game.bonus/game.cost);
-     },
+	//检测浏览器
+	checkbridge() {
+		var self = this;
 
-     //兑换
-     exchange(num){
+		if (typeof WeixinJSBridge == 'undefined') { //非微信浏览器
+			//  if( document.addEventListener ){
+			//      document.addEventListener('WeixinJSBridgeReady', this.onBridgeReady, false);
+			//  }else if (document.attachEvent){
+			//      document.attachEvent('WeixinJSBridgeReady', this.onBridgeReady);
+			//      document.attachEvent('onWeixinJSBridgeReady', this.onBridgeReady);
+			//  }
 
-        if(game.openid =='') return;
+			this.loaddata();
 
-        let url ='http://weikeo.quantumsystem.com.cn/game/exchange.php?openid='+game.openid+'&num='+num+'&coin='+game.coinnum;
-        cc.log(url);
-        var xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function () {
-            if (xhr.readyState == 4 && (xhr.status >= 200 && xhr.status < 400)) {
-                var response = xhr.responseText;
-                
-                console.log(response);
-                if(response != 'error'){
-                    var s = JSON.parse(response);
+			window.addEventListener(
+				'beforeunload',
+				function(e) {
+					self.savedata();
+				},
+				false
+			);
+		} else {
+			self.pushHistory();
 
-                    game.exchange(s.coin-0,s.wallet-0);
-                }                   
-            }
-        };
-        xhr.open("GET", url, true);
-        xhr.setRequestHeader("Content-Type","application/x-www-form-urlencoded;");
-        xhr.send();
-     },     
+			//返回时保存
+			window.addEventListener(
+				'popstate',
+				function(e) {
+					game.savecoin();
 
-     checkwxjsbridge()
-     {
-        var self =this;
-         
-        if (typeof WeixinJSBridge == "undefined"){
-            //  if( document.addEventListener ){
-            //      document.addEventListener('WeixinJSBridgeReady', this.onBridgeReady, false);
-            //  }else if (document.attachEvent){
-            //      document.attachEvent('WeixinJSBridgeReady', this.onBridgeReady); 
-            //      document.attachEvent('onWeixinJSBridgeReady', this.onBridgeReady);                
-            //  }    
+					WeixinJSBridge.invoke('closeWindow', {}, function(res) {
+						//alert(res.err_msg);
+					});
+				},
+				false
+			);
 
-            //本地读取
-            game.localload();
-            //非微信浏览器     关闭浏览器时保存
-            window.addEventListener("beforeunload", function(e) {        
-                game.localsave();  //本地保存
-            }, false); 
-             
-          }else{
-            
-            self.pushHistory();
- 
-            //返回时保存
-            window.addEventListener("popstate", function(e) {        
-                game.savecoin();              
+			//关闭时保存
+			// window.onbeforeunload=function(){
+			//     game.savecoin();
+			// };
+			// window.addEventListener("beforeunload", function(e) {
+			//     game.savecoin();
+			// }, false);
+		}
+	},
 
-                WeixinJSBridge.invoke('closeWindow',{},function(res){
-                         //alert(res.err_msg);
-                });            
-           
-            }, false);    
-            
-            //关闭时保存
-            // window.onbeforeunload=function(){                 
-            //     game.savecoin(); 
-            // };
-            // window.addEventListener("beforeunload", function(e) {        
-            //     game.savecoin();  
-            // }, false); 
-        } 
-     },
+	pushHistory() {
+		var state = {
+			title: 'title',
+			url: '#',
+		};
+		window.history.pushState(state, 'title', '#');
+	},
 
-     pushHistory() {  
-         var state = {  
-             title: "title",  
-             url: "#"  
-         };  
-         window.history.pushState(state, "title", "#");  
-     } ,
+	//读取用户存档
+	loaddata(){		
 
+		if(config.isSingle){//单机用户读档
+			game.localload();
+		}else{
+			if (cc.sys.localStorage.getItem('coin_save') == null) return;
+			game.score = JSON.parse(cc.sys.localStorage.getItem('coin_score'));
+		}
+	},
+	//游戏存档
+	savedata(){		
+
+		if(config.isSingle){//单机用户存档
+			game.loaalsave();
+		}else{
+			cc.sys.localStorage.setItem('coin_score', JSON.stringify(game.score));
+			cc.sys.localStorage.setItem('coin_save', game.issaved);
+
+			//服务器存档
+			if (game.openid == '') return;
+
+			let url =config.host+'savecoin.php?openid=' + game.openid + 
+			'&coin=' + game.coinnum +
+			'&cost='+game.cost+
+			'&bonus='+game.bonus;
+
+			var xhr = new XMLHttpRequest();
+			xhr.onreadystatechange = function () {
+				if (xhr.readyState == 4 && (xhr.status >= 200 && xhr.status < 400)) {
+					var response = xhr.responseText;
+
+					//console.log(response);
+					if (response != 'error') {
+						// var s = JSON.parse(response);
+						//cc.log(save ok);
+					}
+				}
+			};
+			xhr.open('GET', url, true);
+			xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded;');
+			xhr.send();
+		}
+	},
 });
